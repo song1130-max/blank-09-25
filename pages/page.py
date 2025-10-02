@@ -1,38 +1,61 @@
 import streamlit as st
-import random
+import numpy as np
+import matplotlib.pyplot as plt
+import sympy as sp
 
-def main():
-    st.title("간단한 곱셈 게임")
-    
-    if 'a' not in st.session_state or 'b' not in st.session_state:
-        st.session_state['a'] = random.randint(2, 9)
-        st.session_state['b'] = random.randint(2, 9)
-        st.session_state['answered'] = False
-        st.session_state['result'] = None
-        st.session_state['problem_id'] = 0
+# 앱 설정
+st.set_page_config(page_title="함수 그래프", page_icon="📈")
+st.title("📈 함수 그래프 놀이터")
+st.markdown("함수를 선택하거나 직접 입력해서 그래프를 확인해요!")
 
-    a = st.session_state['a']
-    b = st.session_state['b']
-    problem_id = st.session_state.get('problem_id', 0)
-    st.write(f"{a} × {b} = ?")
+# 기본 함수 목록 (절댓값 포함)
+default_functions = {
+    "사인": "sin(x)",
+    "코사인": "cos(x)",
+    "탄젠트": "tan(x)",
+    "역사인": "asin(x)",
+    "역코사인": "acos(x)",
+    "역탄젠트": "atan(x)",
+    "쌍곡사인": "sinh(x)",
+    "쌍곡코사인": "cosh(x)",
+    "쌍곡탄젠트": "tanh(x)",
+    "절댓값": "Abs(x)",
+    "1차 함수": "x",
+    "2차 함수": "x**2",
+    "지수 함수": "exp(x)",
+    "로그 함수": "log(x)"
+}
 
-    answer = st.number_input("정답을 입력하세요", min_value=0, step=1, key=f"answer_input_{problem_id}")
+# 사이드바에서 기본 함수 선택
+st.sidebar.header("기본 함수")
+selected_name = st.sidebar.selectbox("함수를 골라보세요", list(default_functions.keys()))
+selected_expr = default_functions[selected_name]
 
-    if st.button("제출"):
-        if answer == a * b:
-            st.session_state['result'] = "정답입니다!"
-        else:
-            st.session_state['result'] = f"오답입니다. 정답은 {a * b}입니다."
-        st.session_state['answered'] = True
+# 사용자 함수 입력
+st.subheader("직접 함수 입력")
+user_input = st.text_input("예: x**2 + 2*x - 3", value=selected_expr)
 
-    if st.session_state.get('answered', False):
-        st.success(st.session_state['result'])
-        if st.button("다음 문제"):
-            st.session_state['a'] = random.randint(2, 9)
-            st.session_state['b'] = random.randint(2, 9)
-            st.session_state['answered'] = False
-            st.session_state['result'] = None
-            st.session_state['problem_id'] = st.session_state.get('problem_id', 0) + 1
+# x 범위 설정
+if any(func in user_input for func in ["log", "asin", "acos"]):
+    x_vals = np.linspace(0.1, 10, 400)
+else:
+    x_vals = np.linspace(-10, 10, 400)
 
-if __name__ == "__main__":
-    main()
+x = sp.Symbol('x')
+try:
+    expr = sp.sympify(user_input)
+    f_np = sp.lambdify(x, expr, modules=["numpy"])
+    y_vals = f_np(x_vals)
+
+    fig, ax = plt.subplots()
+    ax.plot(x_vals, y_vals, color="#FF69B4", linewidth=2)
+    ax.grid(True)
+    ax.set_title("함수 그래프", fontsize=14)
+    st.pyplot(fig)
+
+except Exception as e:
+    st.error("함수 입력이 잘못됐어요. 예: x**2 + 2*x")
+
+# 마무리
+st.markdown("---")
+st.markdown("그래프 잘 나왔나요? 다른 함수도 입력해보세요!")
